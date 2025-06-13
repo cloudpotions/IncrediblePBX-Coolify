@@ -7,10 +7,10 @@ services:
     restart: always
     environment:
       # Coolify Magic Variables for MariaDB
-      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADB_ROOT
+      MYSQL_ROOT_PASSWORD=$SERVICE_PASSWORD_MARIADB_ROOT
       MYSQL_DATABASE: asterisk
-      MYSQL_USER: $SERVICE_USER_MARIADB
-      MYSQL_PASSWORD: $SERVICE_PASSWORD_MARIADB
+      MYSQL_USER=$SERVICE_USER_MARIADB
+      MYSQL_PASSWORD=$SERVICE_PASSWORD_MARIADB
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
@@ -24,13 +24,13 @@ services:
     restart: always
     environment:
       # Coolify Magic Variables for Asterisk and MariaDB
-      FQDN: $SERVICE_FQDN_INCREDIBLEPBX
-      ASTERISK_DB_PW: $SERVICE_PASSWORD_ASTERISK
-      MYSQL_HOST: mariadb
-      MYSQL_DATABASE: asterisk
-      MYSQL_USER: $SERVICE_USER_MARIADB
-      MYSQL_PASSWORD: $SERVICE_PASSWORD_MARIADB
-      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADB_ROOT
+      $SERVICE_FQDN_INCREDIBLEPBX=$SERVICE_FQDN_INCREDIBLEPBX
+      ASTERISK_DB_PW=$SERVICE_PASSWORD_ASTERISK
+      MYSQL_HOST=mariadb
+      MYSQL_DATABASE=asterisk
+      MYSQL_USER=$SERVICE_USER_MARIADB
+      MYSQL_PASSWORD=$SERVICE_PASSWORD_MARIADB
+      MYSQL_ROOT_PASSWORD=$SERVICE_PASSWORD_MARIADB_ROOT
     depends_on:
       - mariadb
       - coturn
@@ -48,6 +48,8 @@ services:
     image: instrumentisto/coturn:latest
     container_name: coturn
     restart: always
+    environment:
+    $SERVICE_FQDN_COTURN=$SERVICE_FQDN_COTURN
     command: >
       --no-cli
       --log-file=stdout
@@ -58,7 +60,7 @@ services:
       --min-port=10000
       --max-port=20000
       --use-auth-secret
-      --static-auth-secret=$SERVICE_SECRET_COTURN
+      --static-auth-secret=$SERVICE_PASSWORD_COTURN
     ports:
       - "3478:3478/udp"
       - "3478:3478/tcp"
