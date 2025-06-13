@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  mariadb:
+    image: mariadb:10.5
+    container_name: mariadb
+    restart: always
+    environment:
+      # Coolify Magic Variables for MariaDB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADB_ROOT
+      MYSQL_DATABASE: asterisk
+      MYSQL_USER: $SERVICE_USER_MARIADB
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MARIADB
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - pbx_network
+
+  incrediblepbx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: incrediblepbx
+    restart: always
+    environment:
+      # Coolify Magic Variables for Asterisk and MariaDB
+      FQDN: $SERVICE_FQDN_INCREDIBLEPBX
+      ASTERISK_DB_PW: $SERVICE_PASSWORD_ASTERISK
+      MYSQL_HOST: mariadb
+      MYSQL_DATABASE: asterisk
+      MYSQL_USER: $SERVICE_USER_MARIADB
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_MARIADB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADB_ROOT
+    depends_on:
+      - mariadb
+      - coturn
+    volumes:
+      - pbx_data:/var/lib/asterisk
+      - pbx_logs:/var/log/asterisk
+    ports:
+      # SIP and RTP Ports for VoIP
+      - "5060-5061:5060-5061/udp"
+      - "10000-20000:10000-20000/udp"
+    networks:
+      - pbx_network
+
+  coturn:
+    image: instrumentisto/coturn:latest
+    container_name: coturn
+    restart: always
+    command: >
+      --no-cli
+      --log-file=stdout
+      --lt-cred-mech
+      --realm=$SERVICE_FQDN_INCREDIBLEPBX
+      --user=$SERVICE_USER_COTURN:$SERVICE_PASSWORD_COTURN
+      --external-ip=$(curl -s ifconfig.me)
+      --min-port=10000
+      --max-port=20000
+      --use-auth-secret
+      --static-auth-secret=$SERVICE_SECRET_COTURN
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5060:5060/udp"
+      - "10000-20000:10000-20000/udp"
+    networks:
+      - pbx_network
+
+volumes:
+  mariadb_data:
+  pbx_data:
+  pbx_logs:
+
+networks:
+  pbx_network:
+    driver: bridge
